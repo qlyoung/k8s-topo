@@ -136,6 +136,8 @@ def parse_endpoints(devices, endpoints, link, idx):
         if 'host' in device_name.lower():
             # Example: ep == ["Eth2","192.168.10.30/24"]
             device = devices.get(device_name, Host(device_name))
+        elif "frr" in device_name.lower():
+            device = devices.get(device_name, FRR(device_name))
         elif 'qrtr' in device_name.lower():      
             device = devices.get(device_name, Quagga(device_name))  
         elif 'xrv' in device_name.lower():      
@@ -400,11 +402,11 @@ class Device(object):
             container.command           = self.command
             container.args              = self.args
             container.env               = self.environment
-            container.image_pull_policy = "IfNotPresent"
+            container.image_pull_policy = "Always"
 
             init_container                   = client.V1Container(name=f"init-{self.name}")
-            init_container.image             = "networkop/init-wait:latest"
-            init_container.image_pull_policy = "IfNotPresent"
+            init_container.image             = "qlyoung/init-wait:armhf"
+            init_container.image_pull_policy = "Always"
             init_container.args              = [f"{len(self.interfaces)+1}", f"{self.sleep}"]
 
             # Setting resource requests
@@ -514,6 +516,13 @@ class Quagga(Device):
         self.image =  'networkop/qrtr'
         self.conf_path = "/etc/quagga"
         self.startup_file = "zebra.conf"
+
+class FRR(Device):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.image = "qlyoung/frr:armhf"
+        self.conf_path = "/etc/frr"
+        self.startup_file = "frr.conf"
 
 class XRV(Device):
     def __init__(self, *args, **kwargs):
