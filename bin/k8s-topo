@@ -122,6 +122,8 @@ def parse_endpoints(devices, endpoints, link, idx):
             device = devices.get(device_name, Host(device_name))
         elif "qrtr" in device_name.lower():
             device = devices.get(device_name, Quagga(device_name))
+        elif "frr" in device_name.lower():
+            device = devices.get(device_name, FRR(device_name))
         elif "xrv" in device_name.lower():
             device = devices.get(device_name, XRV(device_name))
         elif "vmx" in device_name.lower():
@@ -449,8 +451,8 @@ class Device(object):
 
             # nsc-sidecar container
             nsc_container = client.V1Container(name="nsc-sidecar")
-            nsc_container.image = "networkservicemesh/topology-sidecar-nsc:master"
-            nsc_container.image_pull_policy = "IfNotPresent"
+            nsc_container.image = "qlyoung/topology-sidecar-nsc:armhf"
+            nsc_container.image_pull_policy = "Always"
 
             env_nsm_io = client.V1EnvVar(
                 name="NS_NETWORKSERVICEMESH_IO", value=",".join(self._build_nsurls())
@@ -464,8 +466,8 @@ class Device(object):
 
             # nse-sidecar container
             nse_container = client.V1Container(name="nse-sidecar")
-            nse_container.image = "networkservicemesh/topology-sidecar-nse:master"
-            nse_container.image_pull_policy = "IfNotPresent"
+            nse_container.image = "qlyoung/topology-sidecar-nse:armhf"
+            nse_container.image_pull_policy = "Always"
             nse_container.resources = resource_requirements
 
             env_nse_name = client.V1EnvVar(name="ENDPOINT_NETWORK_SERVICE", value=self.topo)
@@ -516,11 +518,11 @@ class Device(object):
             container.command = self.command
             container.args = self.args
             container.env = self.environment
-            container.image_pull_policy = "IfNotPresent"
+            container.image_pull_policy = "Always"
 
             init_container = client.V1Container(name=f"init-{self.name}")
-            init_container.image = "networkop/init-wait:latest"
-            init_container.image_pull_policy = "IfNotPresent"
+            init_container.image = "qlyoung/init-wait:armhf"
+            init_container.image_pull_policy = "Always"
             init_container.args = [f"{len(self.interfaces)+1}", f"{self.sleep}"]
 
             # Setting resource requests
@@ -645,10 +647,16 @@ class Host(Device):
 class Quagga(Device):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.image = "networkop/qrtr"
+        self.image = "qlyoung/frr:armhf"
         self.conf_path = "/etc/quagga"
         self.startup_file = "Quagga.conf"
 
+class FRR(Device):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.image = "qlyoung/frr:armhf"
+        self.conf_path = "/etc/frr"
+        self.startup_file = "frr.conf"
 
 class XRV(Device):
     def __init__(self, *args, **kwargs):

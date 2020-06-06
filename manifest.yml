@@ -85,7 +85,7 @@ items:
         serviceAccountName: k8s-topo
         hostNetwork: true
         containers:
-        - image: networkop/k8s-topo:0.2.0
+        - image: qlyoung/k8s-topo:armhf
           imagePullPolicy: Always
           name: k8s-topo
           ports:
